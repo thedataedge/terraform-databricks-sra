@@ -98,6 +98,8 @@ to the [Simplified Private Link](https://learn.microsoft.com/en-us/azure/databri
 files, tables, and machine learning models. Unity Catalog provides a modern approach to granular access controls with centralized policy, auditing, and lineage tracking,
 all integrated into your Databricks workflow.
 
+- **Azure Firewall**: Azure Firewall provides FQDN filtering and network rules for outbound traffic from spoke workspaces. By default, the **Basic** SKU (~$288/mo) is used for a balance of cost and security. Use `firewall_sku` to switch to Standard or Premium for higher throughput. See [AZURE_FIREWALL_COST_COMPARISON.md](AZURE_FIREWALL_COST_COMPARISON.md) for details.
+
 ## Post Workspace Deployment
 
 - **Admin Console Configurations**: There are a number of configurations within the [admin console](https://docs.databricks.com/administration-guide/admin-console.html) that
