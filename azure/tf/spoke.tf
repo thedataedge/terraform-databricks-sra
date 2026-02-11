@@ -7,7 +7,7 @@ resource "azurerm_resource_group" "spoke" {
 }
 
 module "spoke_network" {
-  source = "./modules/virtual_network"
+  source   = "./modules/virtual_network"
   for_each = var.create_workspace_vnet ? var.spokes : {}
 
   # Azure Parameters
@@ -28,18 +28,18 @@ module "spoke_network" {
 }
 
 module "spoke_workspace" {
-  source = "./modules/workspace"
+  source   = "./modules/workspace"
   for_each = var.spokes
 
   # Azure/Network parameters
-  location                      = var.location
-  resource_suffix               = each.value.resource_suffix
-  resource_group_name           = azurerm_resource_group.spoke[each.key].name
-  tags                          = var.tags
-  enhanced_security_compliance  = var.workspace_security_compliance
-  name_overrides                = var.workspace_name_overrides
-  network_configuration         = module.spoke_network[each.key].network_configuration
-  dns_zone_ids                  = module.spoke_network[each.key].dns_zone_ids
+  location                     = var.location
+  resource_suffix              = each.value.resource_suffix
+  resource_group_name          = azurerm_resource_group.spoke[each.key].name
+  tags                         = var.tags
+  enhanced_security_compliance = var.workspace_security_compliance
+  name_overrides               = var.workspace_name_overrides
+  network_configuration        = module.spoke_network[each.key].network_configuration
+  dns_zone_ids                 = module.spoke_network[each.key].dns_zone_ids
 
   # KMS parameters
   is_kms_enabled          = var.cmk_enabled
