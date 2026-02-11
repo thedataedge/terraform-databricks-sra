@@ -9,7 +9,7 @@ resource "azurerm_private_dns_zone" "backend" {
 
 # Define a virtual network link for the private DNS zone and the backend virtual network
 resource "azurerm_private_dns_zone_virtual_network_link" "backend" {
-  count  = var.has_backend ? 1 : 0
+  count                 = var.has_backend ? 1 : 0
   name                  = "databricks-vnetlink-backend"
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.backend[0].name
@@ -29,7 +29,7 @@ resource "azurerm_private_dns_zone" "dbfs_dfs" {
 
 # Define a virtual network link for the dbfs_dfs private DNS zone
 resource "azurerm_private_dns_zone_virtual_network_link" "dbfs_dfs" {
- count                  = var.has_backend ? 1 : 0    
+  count                 = var.has_backend ? 1 : 0
   name                  = "dbfs-dfs"
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.dbfs_dfs[0].name
