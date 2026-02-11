@@ -73,6 +73,12 @@ on:
         required: false
         description: Additional arguments to pass to the terraform test command e.g. "-var 'foo=bar' -filter=tests/mock_plan.tftest.hcl"
 
+      terraform_init_args:
+        type: string
+        default: null
+        required: false
+        description: Additional arguments to pass to terraform init e.g. "-backend=false" when backend config is not available in CI (avoids interactive prompts)
+
 jobs:
   # TFLint Job
   tflint:
@@ -152,7 +158,7 @@ jobs:
         with:
           terraform_version: inputs.terraform_version
       - name: terraform init
-        run: terraform init
+        run: terraform init ${{ inputs.terraform_init_args }}
         working-directory: ${{ inputs.working_directory }}
       - name: terraform test
         run: terraform test ${{ inputs.terraform_test_args }}
