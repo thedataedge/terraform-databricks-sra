@@ -5,11 +5,34 @@
 1. Clone this Repo
 2. Install [Terraform](https://developer.hashicorp.com/terraform/downloads)
 3. CD into `tf`
-4. Using `template.tfvars.example` as starting point, supply your variables and place in `tf` directory
+4. Using `template.tfvars.example` or `terraform.tfvars` as a starting point, supply your variables and place in `tf` directory. For **two spokes (prod and dev)** with separate resource groups and workspaces, use the `spokes` variable (see `terraform.tfvars` for an example).
 5. Run `terraform init`
 6. Run `terraform validate`
 7. From `tf` directory, run `terraform plan -var-file <YOUR_VAR_FILE>`, if edited directly, the command would be `terraform plan -var-file template.tfvars.example`
-8. Run `terraform apply -var-file <YOUR_VAR_FILE`
+8. Run `terraform apply -var-file <YOUR_VAR_FILE>`
+
+## Terraform state backend (Azure)
+
+State is stored in **rg-tepe-terraform-mgmt** using the storage account **stterraformstatetepe** (northeurope).
+
+1. **One-time: create the tfstate container** (if you already have the storage account):
+   ```bash
+   cd tf
+   SKIP_STORAGE_ACCOUNT=true ./scripts/bootstrap_backend.sh
+   ```
+   If you need to create both storage account and container from scratch, run `./scripts/bootstrap_backend.sh` without `SKIP_STORAGE_ACCOUNT`. Optional env vars: `RESOURCE_GROUP`, `STORAGE_ACCOUNT_NAME`, `CONTAINER_NAME`, `LOCATION`, `SUBSCRIPTION_ID`.
+
+2. **Configure backend** – copy the example (it already points to `stterraformstatetepe`):
+   ```bash
+   cp backend.azurerm.example.hcl backend.azurerm.hcl
+   ```
+
+3. **Initialize with backend**:
+   ```bash
+   terraform init -backend-config=backend.azurerm.hcl
+   ```
+
+Keep `backend.azurerm.hcl` out of version control (it is ignored via `*.hcl`).
 
 ## Note on provider initialization with Azure CLI
 If you are using [Azure CLI Authentication](https://registry.terraform.io/providers/databricks/databricks/latest/docs#authenticating-with-azure-cli),
@@ -180,117 +203,55 @@ sat_configuration = {
 
 ## Adding additional spokes
 
-To add additional spokes to this configuration, follow the below steps.
+This configuration supports **multiple spokes** so you can deploy separate workspaces (e.g. prod and dev) with isolated resource groups and networks. The approach follows the [Databricks SRA Azure documentation](https://github.com/databricks/terraform-databricks-sra/tree/main/azure): each spoke gets its own resource group, VNet, Databricks workspace, and Unity Catalog catalog.
 
-1. Add a new key to the spoke_config variable
+### Using the built-in spokes (prod and dev)
+
+Spokes are defined by the **`spokes`** variable. Supported spoke keys are **`prod`** and **`dev`**. You can deploy one or both.
+
+**1. Define spokes in your variables** (e.g. `terraform.tfvars`):
 
 ```hcl
-# Terraform variables (for example, terraform.tfvars)
-spoke_config = {
-  spoke = {
-    resource_suffix = "spoke"
-    cidr            = "10.1.0.0/20"
-    tags = {
-      environment       = "dev"
-    },
-  spoke_b = { #<----- Add a new spoke config
-    resource_suffix = "spoke_b"
-    cidr            = "10.2.0.0/20"
-    tags = {
-      environment       = "test"
+# Example: two spokes (prod and dev), each with its own
+# resource group, VNet, workspace, and catalog.
+
+spokes = {
+  prod = {
+    resource_suffix = "tepe-prod"
+    workspace_vnet = {
+      cidr     = "10.0.4.0/22"
+      new_bits = 2
+    }
+  }
+  dev = {
+    resource_suffix = "tepe-dev"
+    workspace_vnet = {
+      cidr     = "10.0.8.0/22"
+      new_bits = 2
     }
   }
 }
 ```
 
-2. Add a new provider to the providers.tf for the new spoke
+**2. What gets created per spoke**
 
-```hcl
-# providers.tf
+For each entry in `spokes`:
 
-# New spoke provider
-provider "databricks" {
-  alias = "spoke_b"
-  host  = module.spoke_b.workspace_url
-}
-```
+- A **resource group** named `rg-<resource_suffix>` (for example, `rg-tepe-prod`, `rg-tepe-dev`).
+- A **workspace VNet** using the `workspace_vnet.cidr` and `new_bits` you provide.
+- A Databricks **workspace** in that resource group and VNet.
+- A Unity Catalog **catalog** named after the `resource_suffix` (for example, `tepe-prod`, `tepe-dev`).
 
-3. Copy the `spoke.tf` file to a new file (for example, `spoke_b.tf`).
+**3. Enabling only one spoke**
 
-4. Make the following adjustments to the new file
+To deploy a single spoke (for example, only `prod`), remove the other key from the `spokes` map. The configuration and providers are wired to handle any combination of `prod` and `dev`.
 
-```hcl
-# spoke_b.tf
-module "spoke" { #<----- Modify the name of the module to something unique
-  source = "./modules/spoke"
+**4. Outputs**
 
-  # Update these per spoke
-  resource_suffix = var.spoke_config["spoke"].resource_suffix #<----- Use a new key in the spoke_config variable
-  vnet_cidr       = var.spoke_config["spoke"].cidr
-  tags            = var.spoke_config["spoke"].tags
+After `terraform apply`, you can find the deployed spokes in:
 
-  ...
-
-  depends_on = [module.hub]
-}
-
-module "spoke_catalog" { #<----- Rename this spoke's catalog to something unique
-  source = "./modules/catalog"
-
-  # Update these per catalog for the catalog's spoke
-  catalog_name        = module.spoke.resource_suffix #<----- Replace all references to original spoke with new spoke
-  dns_zone_ids        = [module.spoke.dns_zone_ids["dfs"]]
-  ncc_id              = module.spoke.ncc_id
-  resource_group_name = module.spoke.resource_group_name
-  resource_suffix     = module.spoke.resource_suffix
-  subnet_id           = module.spoke.subnet_ids.privatelink
-  tags                = module.spoke.tags
-
-  ...
-
-  providers = {
-    databricks.workspace = databricks.spoke #<----- Replace provider reference to new spoke
-  }
-}
-```
-
-```hcl
-# spoke_b.tf - modified
-module "spoke_b" {
-  source = "./modules/spoke"
-
-  # Update these per spoke
-  resource_suffix = var.spoke_config["spoke_b"].resource_suffix
-  vnet_cidr       = var.spoke_config["spoke_b"].cidr
-  tags            = var.spoke_config["spoke_b"].tags
-  
-  ...
-  
-  depends_on = [module.hub]
-}
-
-module "spoke_b_catalog" {
-  source = "./modules/catalog"
-
-  # Update these per catalog for the catalog's spoke
-  catalog_name        = module.spoke_b.resource_suffix
-  dns_zone_ids        = [module.spoke_b.dns_zone_ids["dfs"]]
-  ncc_id              = module.spoke_b.ncc_id
-  resource_group_name = module.spoke_b.resource_group_name
-  resource_suffix     = module.spoke_b.resource_suffix
-  subnet_id           = module.spoke_b.subnet_ids.privatelink
-  tags                = module.spoke_b.tags
-  
-  ...
-  
-  providers = {
-    databricks.workspace = databricks.spoke_b
-  }
-}
-
-```
-
-5. Run `terraform apply` to create the new spoke
+- `spoke_workspace_info` – maps `prod` / `dev` to each workspace’s resource group, URL, and ID.
+- `spoke_workspace_catalog` – maps `prod` / `dev` to the catalog names.
 
 # Additional Security Recommendations and Opportunities
 
