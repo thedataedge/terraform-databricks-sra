@@ -105,7 +105,7 @@ variable "hub_allowed_urls" {
 variable "spokes" {
   type = map(object({
     resource_suffix                 = string
-    create_workspace_resource_group  = optional(bool, true)
+    create_workspace_resource_group = optional(bool, true)
     workspace_vnet = object({
       cidr     = string
       new_bits = optional(number, 2)
@@ -222,6 +222,7 @@ variable "sat_configuration" {
   description = "(Optional) Configuration for the SAT customization"
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "sat_service_principal" {
   type = object({
     client_id     = optional(string, "")
@@ -238,6 +239,7 @@ variable "sat_service_principal" {
 }
 
 # This variable is only used for development purposes - is should not be used/set if deploying SRA in a customer environment
+# tflint-ignore: terraform_unused_declarations
 variable "sat_force_destroy" {
   type        = bool
   default     = false
