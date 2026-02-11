@@ -54,6 +54,23 @@ variable "hub_resource_suffix" {
   }
 }
 
+variable "is_firewall_enabled" {
+  type        = bool
+  description = "(Optional) Enable Azure Firewall in the hub. Only applies when create_hub is true."
+  default     = true
+}
+
+variable "firewall_sku" {
+  type        = string
+  description = "(Optional) Azure Firewall SKU when the hub firewall is enabled. Possible values are Basic, Standard, and Premium. Basic is cost-optimized for medium traffic (< ~15 TB/month)."
+  default     = "Standard"
+
+  validation {
+    condition     = contains(["Basic", "Standard", "Premium"], var.firewall_sku)
+    error_message = "firewall_sku must be one of: Basic, Standard, Premium."
+  }
+}
+
 # ------------------------------------------------------------------
 # The below variables control what URLs workspaces can access on the internet. By default, no workspace can access the
 # internet at all. Note that this means that SAT will not work by default unless the required URLs are added (see below)
@@ -84,76 +101,27 @@ variable "hub_allowed_urls" {
   }
 }
 # ------------------------------------------------------------------
-# Workspace Variables
-variable "create_workspace_resource_group" {
-  type        = string
-  description = "(Optional) Should a resource group be created for this workspace? If false, resource_group_name must be provided."
-  default     = true
-}
-
-variable "existing_resource_group_name" {
-  type        = string
-  description = "(Optional) Existing resource group name, if using one"
-  default     = null
-}
-
-variable "resource_suffix" {
-  type        = string
-  description = "(Required) Suffix to use for naming Azure resources (e.g. dbx-dev, sra, etc.)"
+# Workspace Variables (multi-spoke: prod and dev)
+variable "spokes" {
+  type = map(object({
+    resource_suffix                 = string
+    create_workspace_resource_group  = optional(bool, true)
+    workspace_vnet = object({
+      cidr     = string
+      new_bits = optional(number, 2)
+    })
+  }))
+  description = "Map of spokes to create. Each key (e.g. prod, dev) gets its own resource group, VNet, and Databricks workspace. Supported keys: prod, dev."
+  validation {
+    condition     = length(var.spokes) >= 1 && alltrue([for k in keys(var.spokes) : contains(["prod", "dev"], k)])
+    error_message = "spokes keys must be \"prod\" and/or \"dev\" (current implementation supports these two spokes only)."
+  }
 }
 
 variable "create_workspace_vnet" {
   type        = bool
-  description = "(Optional) Whether to create SRA-managed workspace VNET. If false, workspace_vnet must be provided."
+  description = "(Optional) Whether to create SRA-managed workspace VNET for each spoke. If true, each spoke's workspace_vnet is used."
   default     = true
-}
-
-variable "workspace_vnet" {
-  type = object({
-    cidr     = string
-    new_bits = optional(number, null)
-  })
-  description = "(Optional) Spoke network configuration - required when create_workspace_vnet is true."
-  default     = null
-
-  validation {
-    condition     = var.create_workspace_vnet ? var.workspace_vnet != null : true
-    error_message = "workspace_vnet must be provided when create_workspace_vnet is true"
-  }
-  validation {
-    condition     = !var.create_workspace_vnet ? var.workspace_vnet == null : true
-    error_message = "workspace_vnet must not be provided when create_workspace_vnet is false"
-  }
-}
-
-variable "existing_workspace_vnet" {
-  type = object({
-    network_configuration = object({
-      virtual_network_id                                   = string
-      private_subnet_id                                    = string
-      public_subnet_id                                     = string
-      private_endpoint_subnet_id                           = string
-      private_subnet_network_security_group_association_id = string
-      public_subnet_network_security_group_association_id  = string
-    })
-    dns_zone_ids = object({
-      backend = string
-      dfs     = string
-      blob    = string
-    })
-  })
-  description = "(Optional) Existing network configuration - required when create_workspace_vnet is false"
-  default     = null
-
-  validation {
-    condition     = !var.create_workspace_vnet ? var.existing_workspace_vnet != null : true
-    error_message = "existing_workspace_vnet must be provided when create_workspace_vnet is false"
-  }
-
-  validation {
-    condition     = var.create_workspace_vnet ? var.existing_workspace_vnet == null : true
-    error_message = "existing_workspace_vnet should only be provided when create_workspace_vnet is false"
-  }
 }
 
 variable "existing_ncc_id" {
