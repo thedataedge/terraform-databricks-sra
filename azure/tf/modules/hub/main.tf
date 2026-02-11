@@ -13,6 +13,7 @@ module "hub_network" {
   tags                = var.tags
   resource_group_name = var.resource_group_name
   location            = var.location
+  has_backend         = var.has_backend
 
   # Reference resources created in firewall.tf
   route_table_id = azurerm_route_table.this.id
