@@ -17,11 +17,11 @@ locals {
 
 output "dns_zone_ids" {
   description = "Private DNS Zone IDs"
-  value = {
-    dfs     = azurerm_private_dns_zone.dbfs_dfs.id
-    blob    = azurerm_private_dns_zone.dbfs_blob.id
-    backend = azurerm_private_dns_zone.backend.id
-  }
+  value = var.has_backend ? {
+    dfs     = azurerm_private_dns_zone.dbfs_dfs[0].id
+    blob    = azurerm_private_dns_zone.dbfs_blob[0].id
+    backend = azurerm_private_dns_zone.backend[0].id
+  } : {}
 }
 
 output "subnet_ids" {
