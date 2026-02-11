@@ -1,7 +1,7 @@
-databricks_account_id  = "databricks-account-id"
-location               = "eastus2"
-hub_vnet_cidr          = "10.0.0.0/23"
-hub_resource_suffix    = "test"
+databricks_account_id = "databricks-account-id"
+location              = "eastus2"
+hub_vnet_cidr         = "10.0.0.0/23"
+hub_resource_suffix   = "test"
 
 spokes = {
   prod = {
