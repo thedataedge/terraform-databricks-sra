@@ -47,6 +47,7 @@ locals {
 }
 
 # Define a public IP resource for the Azure Firewall
+# Azure Firewall requires Standard SKU public IPs regardless of firewall SKU (Basic/Standard/Premium)
 resource "azurerm_public_ip" "this" {
   count = var.is_firewall_enabled ? 1 : 0
 
@@ -54,7 +55,7 @@ resource "azurerm_public_ip" "this" {
   location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
-  sku                 = var.firewall_sku
+  sku                 = "Standard"
   tags                = var.tags
 }
 
@@ -71,12 +72,14 @@ resource "azurerm_public_ip" "management" {
 }
 
 # Define a firewall policy resource
+# Policy tier must match firewall SKU: Basic firewall requires Basic policy
 resource "azurerm_firewall_policy" "this" {
   count = var.is_firewall_enabled ? 1 : 0
 
   name                = module.naming.firewall_policy.name_unique
   resource_group_name = var.resource_group_name
   location            = var.location
+  sku                 = var.firewall_sku
   tags                = var.tags
 }
 
