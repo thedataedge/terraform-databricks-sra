@@ -25,9 +25,8 @@ The terraform-ruw workflow runs three tests:
 - `terraform fmt`
 - `terraform test`
 
-It is a reusable workflow, and is called by other workflows via the `workflow_call` feature in GitHub Actions. Each
-Terraform module in this repo has a separate workflow with unique settings for testing. The workflow may be used
-multiple time for one module, with different settings per workflow.
+It is a reusable workflow, and is called by `azure-test.yml` via the `workflow_call` feature in GitHub Actions. The
+Azure Terraform module uses this workflow for testing (`azure/tf`).
 
 ## Workflow features
 
