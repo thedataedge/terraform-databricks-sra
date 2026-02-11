@@ -38,8 +38,8 @@ variable "is_firewall_enabled" {
 
 variable "firewall_sku" {
   type        = string
-  description = "(Optional) SKU tier of the Firewall. Possible values are Premium, Standard and Basic"
-  default     = "Standard"
+  description = "(Optional) SKU tier of the Firewall. Basic (default) is cost-optimized. Standard/Premium add throughput and advanced features."
+  default     = "Basic"
 }
 
 variable "is_kms_enabled" {
