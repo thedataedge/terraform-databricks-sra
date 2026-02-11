@@ -21,10 +21,19 @@ module "hub_network" {
 
   virtual_network_peerings = var.virtual_network_peerings
 
-  extra_subnets = {
-    AzureFirewallSubnet = {
-      name     = "AzureFirewallSubnet"
-      new_bits = 26 - split("/", var.vnet_cidr)[1]
-    }
-  }
+  # Basic SKU requires AzureFirewallManagementSubnet for its management NIC
+  extra_subnets = merge(
+    {
+      AzureFirewallSubnet = {
+        name     = "AzureFirewallSubnet"
+        new_bits = 26 - split("/", var.vnet_cidr)[1]
+      }
+    },
+    var.is_firewall_enabled && var.firewall_sku == "Basic" ? {
+      AzureFirewallManagementSubnet = {
+        name     = "AzureFirewallManagementSubnet"
+        new_bits = 26 - split("/", var.vnet_cidr)[1]
+      }
+    } : {}
+  )
 }
