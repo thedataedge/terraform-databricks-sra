@@ -58,6 +58,18 @@ resource "azurerm_public_ip" "this" {
   tags                = var.tags
 }
 
+# Management public IP (required for Basic SKU; must be Standard per Azure)
+resource "azurerm_public_ip" "management" {
+  count = var.is_firewall_enabled && var.firewall_sku == "Basic" ? 1 : 0
+
+  name                = "${module.naming.public_ip.name_unique}-mgmt"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = var.tags
+}
+
 # Define a firewall policy resource
 resource "azurerm_firewall_policy" "this" {
   count = var.is_firewall_enabled ? 1 : 0
@@ -150,6 +162,16 @@ resource "azurerm_firewall" "this" {
     name                 = "firewall-public-ip-config"
     subnet_id            = module.hub_network.subnet_ids["AzureFirewallSubnet"]
     public_ip_address_id = azurerm_public_ip.this[0].id
+  }
+
+  # Basic SKU requires a dedicated management IP configuration (AzureFirewallManagementSubnet + Standard PIP)
+  dynamic "management_ip_configuration" {
+    for_each = var.firewall_sku == "Basic" ? [1] : []
+    content {
+      name                 = "firewall-management-ip-config"
+      subnet_id            = module.hub_network.subnet_ids["AzureFirewallManagementSubnet"]
+      public_ip_address_id = azurerm_public_ip.management[0].id
+    }
   }
 
   tags = var.tags
