@@ -59,9 +59,17 @@ terraform.rc
 # Include tflint configurations for CI workflows
 !**/.tflint.hcl
 !**/*.tftest.hcl
+# Include backend example (real backend.azurerm.hcl stays ignored)
+!**/backend.azurerm.example.hcl
 
 # Google Cloud Service Account Keys
 gcp/modules/workspace_deployment/fslakehouse-9b0f57986dbf.json
 gcp/modules/service_account/*.json
 **/service_account/*.json
 .cursorignore
+
+# Cursor
+.cursor/
+
+# Ignore backend script
+scripts/bootstrap_backend.sh
