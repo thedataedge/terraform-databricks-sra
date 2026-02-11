@@ -90,3 +90,9 @@ variable "virtual_network_peerings" {
   description = "(Optional) Map of virtual network peers"
   default     = {}
 }
+
+variable "has_backend" {
+  type        = bool
+  description = "Defines if a backend exists"
+  default     = true
+}
