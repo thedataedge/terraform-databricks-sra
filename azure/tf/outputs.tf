@@ -8,21 +8,26 @@ output "hub_resource_group_name" {
   value       = var.create_hub ? azurerm_resource_group.hub[0].name : null
 }
 
-output "hub_workspace_info" {
-  description = "URLs for the one (or more) deployed Databricks Workspaces"
-  value       = var.create_hub ? [azurerm_resource_group.hub[0].name, module.webauth_workspace[0].workspace_url] : null
-}
+#output "hub_workspace_info" {
+#  description = "URLs for the one (or more) deployed Databricks Workspaces"
+#  value       = var.create_hub ? [azurerm_resource_group.hub[0].name, module.webauth_workspace[0].workspace_url] : null
+#}
 
 output "spoke_workspace_info" {
-  description = "Information for the deployed spoke Databricks Workspace"
+  description = "Information for each deployed spoke Databricks workspace (keyed by spoke name: prod, dev)"
   value = {
-    resource_group_name = module.spoke_workspace.resource_group_name
-    workspace_url       = module.spoke_workspace.workspace_url
-    workspace_id        = module.spoke_workspace.workspace_id
+    for k, v in module.spoke_workspace : k => {
+      resource_group_name = v.resource_group_name
+      workspace_url       = v.workspace_url
+      workspace_id        = v.workspace_id
+    }
   }
 }
 
 output "spoke_workspace_catalog" {
-  description = "Name of the catalog created for the spoke workspace"
-  value       = module.spoke_catalog.catalog_name
+  description = "Catalog name for each spoke workspace (keyed by spoke name: prod, dev)"
+  value = merge(
+    length(module.spoke_catalog_prod) > 0 ? { prod = module.spoke_catalog_prod[0].catalog_name } : {},
+    length(module.spoke_catalog_dev) > 0 ? { dev = module.spoke_catalog_dev[0].catalog_name } : {}
+  )
 }
