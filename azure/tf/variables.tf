@@ -62,8 +62,8 @@ variable "is_firewall_enabled" {
 
 variable "firewall_sku" {
   type        = string
-  description = "(Optional) Azure Firewall SKU when the hub firewall is enabled. Possible values are Basic, Standard, and Premium. Basic is cost-optimized for medium traffic (< ~15 TB/month)."
-  default     = "Standard"
+  description = "(Optional) Azure Firewall SKU when the hub firewall is enabled. Basic (default) offers FQDN filtering at ~$288/mo. Standard/Premium add autoscaling and advanced features."
+  default     = "Basic"
 
   validation {
     condition     = contains(["Basic", "Standard", "Premium"], var.firewall_sku)
