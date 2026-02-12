@@ -1,14 +1,17 @@
 # Define subnets using cidrsubnet function
+# When workspace_subnets.create=false (hub), we still include container/host in allocation order
+# so privatelink and extra subnets receive the same CIDR blocks as before. Otherwise removing
+# them shifts allocations and Azure rejects in-place prefix changes (InUsePrefixCannotBeDeleted).
 locals {
   workspace_subnets = toset(["container", "host"])
   subnets = concat(
-    var.workspace_subnets.create ? [
+    [
       for subnet in local.workspace_subnets :
       {
         name     = subnet,
-        new_bits = var.workspace_subnets.new_bits
+        new_bits = var.workspace_subnets.create ? var.workspace_subnets.new_bits : 2
       }
-    ] : [],
+    ],
     var.private_link_subnet.create ? [
       {
         name     = "privatelink"
