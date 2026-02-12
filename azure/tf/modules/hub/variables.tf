@@ -92,3 +92,9 @@ variable "has_backend" {
   description = "Defines if a backend exists"
   default     = true
 }
+
+variable "create_workspace_subnets" {
+  type        = bool
+  description = "(Optional) Create Databricks workspace subnets (container, host). Hub does not host workspaces; set to false. Spokes require true."
+  default     = false
+}
