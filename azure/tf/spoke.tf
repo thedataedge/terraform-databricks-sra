@@ -22,6 +22,7 @@ module "spoke_network" {
   ipgroup_id               = var.create_hub ? module.hub[0].ipgroup_id : null
   virtual_network_peerings = var.create_hub ? { hub = { remote_virtual_network_id = module.hub[0].vnet_id } } : { hub = { remote_virtual_network_id = var.existing_hub_vnet.vnet_id } }
   workspace_subnets = {
+    create          = true
     new_bits        = each.value.workspace_vnet.new_bits
     add_to_ip_group = var.create_hub
   }
