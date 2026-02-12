@@ -21,6 +21,12 @@ module "hub_network" {
 
   virtual_network_peerings = var.virtual_network_peerings
 
+  # Hub does not host Databricks workspaces; container and host subnets are only needed in spokes
+  workspace_subnets = {
+    create          = var.create_workspace_subnets
+    add_to_ip_group = false
+  }
+
   # Basic SKU requires AzureFirewallManagementSubnet for its management NIC
   extra_subnets = merge(
     {
