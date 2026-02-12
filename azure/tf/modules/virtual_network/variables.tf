@@ -37,7 +37,7 @@ variable "workspace_subnets" {
     new_bits        = optional(number, 2)
     add_to_ip_group = optional(bool, true)
   })
-  description = "(Optional) Workspace subnet configuration"
+  description = "(Optional) Workspace subnet (container, host) configuration. Set create=false for hub VNet; spokes require create=true for Databricks workspace compute."
   default     = {}
 }
 
