@@ -1,6 +1,6 @@
-# Create workspace subnets
+# Create workspace subnets (container, host) - only when create=true (spokes); hub sets create=false
 resource "azurerm_subnet" "workspace_subnets" {
-  for_each = local.workspace_subnets
+  for_each = var.workspace_subnets.create ? local.workspace_subnets : toset([])
 
   name                 = "${module.naming.subnet.name}-${each.key}"
   resource_group_name  = azurerm_virtual_network.this.resource_group_name
@@ -38,14 +38,14 @@ resource "azurerm_subnet_route_table_association" "workspace_subnets" {
 }
 
 resource "azurerm_ip_group_cidr" "workspace_subnet_host" {
-  count = var.workspace_subnets.add_to_ip_group ? 1 : 0
+  count = var.workspace_subnets.create && var.workspace_subnets.add_to_ip_group ? 1 : 0
 
   ip_group_id = var.ipgroup_id
   cidr        = azurerm_subnet.workspace_subnets["host"].address_prefixes[0]
 }
 
 resource "azurerm_ip_group_cidr" "workspace_subnet_container" {
-  count = var.workspace_subnets.add_to_ip_group ? 1 : 0
+  count = var.workspace_subnets.create && var.workspace_subnets.add_to_ip_group ? 1 : 0
 
   ip_group_id = var.ipgroup_id
   cidr        = azurerm_subnet.workspace_subnets["container"].address_prefixes[0]
