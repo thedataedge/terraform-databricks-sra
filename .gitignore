@@ -72,7 +72,7 @@ gcp/modules/service_account/*.json
 **/service_account/*.json
 .cursorignore
 
-# Cursor
+# Cursor (includes skills, rules, shodh-memory-rest - local use only)
 .cursor/
 
 # Ignore backend script
