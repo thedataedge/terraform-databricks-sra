@@ -31,3 +31,13 @@ output "spoke_workspace_catalog" {
     length(module.spoke_catalog_dev) > 0 ? { dev = module.spoke_catalog_dev[0].catalog_name } : {}
   )
 }
+
+output "spoke_data_factory_info" {
+  description = "Data Factory ID and name per spoke"
+  value = {
+    for k, v in azurerm_data_factory.spoke : k => {
+      id   = v.id
+      name = v.name
+    }
+  }
+}
