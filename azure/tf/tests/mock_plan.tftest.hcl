@@ -42,7 +42,7 @@ mock_provider "databricks" {
 }
 
 run "plan_test_defaults" {
-  command   = plan
+  command = plan
 }
 
 run "plan_test_sat_broken_classic" {
@@ -71,7 +71,7 @@ run "plan_test_sat_broken_serverless" {
 }
 
 run "plan_test_sat_with_byosp" {
-  command   = plan
+  command = plan
   variables {
     allowed_fqdns = ["management.azure.com", "login.microsoftonline.com", "python.org", "*.python.org", "pypi.org", "*.pypi.org", "pythonhosted.org", "*.pythonhosted.org"]
     sat_configuration = {
@@ -85,7 +85,7 @@ run "plan_test_sat_with_byosp" {
 }
 
 run "plan_test_sat_nondefaults" {
-  command   = plan
+  command = plan
   variables {
     allowed_fqdns = ["management.azure.com", "login.microsoftonline.com", "python.org", "*.python.org", "pypi.org", "*.pypi.org", "pythonhosted.org", "*.pythonhosted.org"]
     sat_configuration = {
@@ -99,7 +99,7 @@ run "plan_test_sat_nondefaults" {
 }
 
 run "plan_test_byo_hub_with_spoke" {
-  command   = plan
+  command = plan
   variables {
     create_hub              = false
     databricks_metastore_id = "00000000-0000-0000-0000-000000000000"
@@ -137,7 +137,7 @@ run "plan_test_byo_hub_with_spoke" {
 # module.spoke_network which is empty when create_workspace_vnet=false).
 
 run "plan_test_cmk_disabled" {
-  command   = plan
+  command = plan
   variables {
     cmk_enabled = false
     spokes = {
@@ -154,7 +154,7 @@ run "plan_test_cmk_disabled" {
 }
 
 run "plan_test_enhanced_security" {
-  command   = plan
+  command = plan
   variables {
     spokes = {
       prod = {
@@ -176,25 +176,25 @@ run "plan_test_enhanced_security" {
 }
 
 run "plan_test_byo_resource_group" {
-  command   = plan
+  command = plan
   variables {
     spokes = {
       prod = {
         resource_suffix                 = "byorg"
         create_workspace_resource_group = false
-        workspace_vnet                 = { cidr = "10.1.0.0/20", new_bits = null }
+        workspace_vnet                  = { cidr = "10.1.0.0/20", new_bits = null }
       }
       dev = {
         resource_suffix                 = "byorg-dev"
         create_workspace_resource_group = false
-        workspace_vnet                 = { cidr = "10.1.0.0/20", new_bits = null }
+        workspace_vnet                  = { cidr = "10.1.0.0/20", new_bits = null }
       }
     }
   }
 }
 
 run "plan_test_name_overrides" {
-  command   = plan
+  command = plan
   variables {
     spokes = {
       prod = {
@@ -214,7 +214,7 @@ run "plan_test_name_overrides" {
 }
 
 run "plan_test_custom_subnet_sizing" {
-  command   = plan
+  command = plan
   variables {
     spokes = {
       prod = {

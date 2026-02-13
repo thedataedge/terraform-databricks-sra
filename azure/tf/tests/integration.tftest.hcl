@@ -6,7 +6,7 @@ variables {
 
 # Run the test initializer to get outputs from the local state in the cloud directory
 run "test_initializer" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/test_initializer"
   }
@@ -16,7 +16,7 @@ run "test_initializer" {
 # Covers:
 # - Creating a classic cluster
 run "classic_cluster_spoke" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/classic_cluster"
   }
@@ -30,7 +30,7 @@ run "classic_cluster_spoke" {
 # Covers:
 # - Creating jobs, notebooks, experiments, models, lakebase
 run "bundle_deploy" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/sra_bundle_test"
   }
@@ -56,7 +56,7 @@ run "bundle_deploy" {
 # - Writing to a UC Table
 # - Reading from a UC Table
 run "spark_basic" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/bundle_run"
   }
@@ -84,7 +84,7 @@ run "spark_basic" {
 # - Access to sample data (nyc taxi data)
 
 run "ml_workflow_classic" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/bundle_run"
   }
@@ -107,7 +107,7 @@ run "ml_workflow_classic" {
 # Covers:
 # - Deleting a model from classic
 run "ml_cleanup_classic" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/bundle_run"
   }
@@ -137,7 +137,7 @@ run "ml_cleanup_classic" {
 # - Access to sample data (nyc taxi data)
 
 run "ml_workflow_serverless" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/bundle_run"
   }
@@ -160,7 +160,7 @@ run "ml_workflow_serverless" {
 # Covers:
 # - Deleting a model from serverless
 run "ml_cleanup_serverless" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/bundle_run"
   }
@@ -186,7 +186,7 @@ run "ml_cleanup_serverless" {
 # Covers:
 # - Connecting to Lakebase from classic
 run "lakebase_connectivity" {
-  command   = apply
+  command = apply
   module {
     source = "../../common/tests/bundle_run"
   }
