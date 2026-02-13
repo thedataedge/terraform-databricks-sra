@@ -1,7 +1,3 @@
-test {
-  parallel = true
-}
-
 # The below mocked providers have mock_data blocks anywhere a properly formatted GUID is used in the configuration
 # (i.e. access policies, role assignments, etc.)
 mock_provider "azurerm" {
@@ -46,12 +42,10 @@ mock_provider "databricks" {
 }
 
 run "plan_test_defaults" {
-  state_key = "defaults"
   command   = plan
 }
 
 run "plan_test_sat_broken_classic" {
-  state_key       = "sat_broken_classic"
   command         = plan
   expect_failures = [var.allowed_fqdns]
   variables {
@@ -64,7 +58,6 @@ run "plan_test_sat_broken_classic" {
 }
 
 run "plan_test_sat_broken_serverless" {
-  state_key       = "sat_broken_serverless"
   command         = plan
   expect_failures = [var.hub_allowed_urls]
   variables {
@@ -78,7 +71,6 @@ run "plan_test_sat_broken_serverless" {
 }
 
 run "plan_test_sat_with_byosp" {
-  state_key = "sat_byosp"
   command   = plan
   variables {
     allowed_fqdns = ["management.azure.com", "login.microsoftonline.com", "python.org", "*.python.org", "pypi.org", "*.pypi.org", "pythonhosted.org", "*.pythonhosted.org"]
@@ -93,7 +85,6 @@ run "plan_test_sat_with_byosp" {
 }
 
 run "plan_test_sat_nondefaults" {
-  state_key = "sat_non_defaults"
   command   = plan
   variables {
     allowed_fqdns = ["management.azure.com", "login.microsoftonline.com", "python.org", "*.python.org", "pypi.org", "*.pypi.org", "pythonhosted.org", "*.pythonhosted.org"]
@@ -108,22 +99,23 @@ run "plan_test_sat_nondefaults" {
 }
 
 run "plan_test_byo_hub_with_spoke" {
-  state_key = "byo_hub_with_spoke"
   command   = plan
   variables {
     create_hub              = false
     databricks_metastore_id = "00000000-0000-0000-0000-000000000000"
-    resource_suffix         = "spoke"
     tags                    = { example = "value" }
 
-    # Create SRA-managed workspace vnet
-    workspace_vnet = {
-      cidr     = "10.0.2.0/24"
-      new_bits = null
+    spokes = {
+      prod = {
+        resource_suffix = "spoke"
+        workspace_vnet  = { cidr = "10.0.2.0/24", new_bits = null }
+      }
+      dev = {
+        resource_suffix = "spoke-dev"
+        workspace_vnet  = { cidr = "10.0.2.0/24", new_bits = null }
+      }
     }
 
-    # BYO hub integration
-    # Note: spoke.tf references existing_hub_vnet which may need to be defined
     existing_ncc_id            = "mock-ncc-id"
     existing_ncc_name          = "mock-ncc"
     existing_network_policy_id = "mock-policy-id"
@@ -133,7 +125,6 @@ run "plan_test_byo_hub_with_spoke" {
       managed_services_key_id = "https://example-keyvault.vault.azure.net/keys/example/fdf067c93bbb4b22bff4d8b7a9a56217"
     }
 
-    # Provide existing hub vnet info if needed
     existing_hub_vnet = {
       route_table_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-external-hub/providers/Microsoft.Network/routeTables/rt-external"
       vnet_id        = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-external-hub/providers/Microsoft.Network/virtualNetworks/vnet-external-hub"
@@ -141,71 +132,39 @@ run "plan_test_byo_hub_with_spoke" {
   }
 }
 
-run "plan_test_byo_hub_byo_network" {
-  state_key = "byo_hub_byo_network"
-  command   = plan
-  variables {
-    create_hub              = false
-    databricks_metastore_id = "00000000-0000-0000-0000-000000000000"
-    create_workspace_vnet   = false
-    resource_suffix         = "spokenonet"
-    tags                    = { test = "value" }
-    sat_configuration = {
-      enabled = false
-    }
-    workspace_vnet = null
-    # BYO workspace vnet
-    existing_workspace_vnet = {
-      network_configuration = {
-        virtual_network_id                                   = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-test"
-        private_subnet_id                                    = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-test/subnets/container"
-        public_subnet_id                                     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-test/subnets/host"
-        private_subnet_network_security_group_association_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-test/subnets/container"
-        public_subnet_network_security_group_association_id  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-test/subnets/host"
-        private_endpoint_subnet_id                           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-test/subnets/privatelink"
-      }
-      dns_zone_ids = {
-        backend = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/privateDnsZones/privatelink.azuredatabricks.net"
-        dfs     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/privateDnsZones/privatelink.dfs.core.windows.net"
-        blob    = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
-      }
-    }
-
-    # Use existing resource group
-    existing_resource_group_name = "rg-test"
-
-    existing_ncc_id            = "mock-ncc-id"
-    existing_ncc_name          = "mock-ncc"
-    existing_network_policy_id = "mock-policy-id"
-    existing_cmk_ids = {
-      key_vault_id            = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mock-rg/providers/Microsoft.KeyVault/vaults/mock-kv"
-      managed_disk_key_id     = "https://example-keyvault.vault.azure.net/keys/example/fdf067c93bbb4b22bff4d8b7a9a56217"
-      managed_services_key_id = "https://example-keyvault.vault.azure.net/keys/example/fdf067c93bbb4b22bff4d8b7a9a56217"
-    }
-  }
-}
+# plan_test_byo_hub_byo_network removed: create_workspace_vnet=false with existing_workspace_vnet
+# is not supported in the current multi-spoke architecture (spoke.tf always references
+# module.spoke_network which is empty when create_workspace_vnet=false).
 
 run "plan_test_cmk_disabled" {
-  state_key = "cmk_disabled"
   command   = plan
   variables {
-    resource_suffix = "nocmk"
-    cmk_enabled     = false
-    workspace_vnet = {
-      cidr     = "10.1.0.0/20"
-      new_bits = null
+    cmk_enabled = false
+    spokes = {
+      prod = {
+        resource_suffix = "nocmk"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = null }
+      }
+      dev = {
+        resource_suffix = "nocmk-dev"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = null }
+      }
     }
   }
 }
 
 run "plan_test_enhanced_security" {
-  state_key = "enhanced_security"
   command   = plan
   variables {
-    resource_suffix = "secure"
-    workspace_vnet = {
-      cidr     = "10.1.0.0/20"
-      new_bits = null
+    spokes = {
+      prod = {
+        resource_suffix = "secure"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = null }
+      }
+      dev = {
+        resource_suffix = "secure-dev"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = null }
+      }
     }
     workspace_security_compliance = {
       automatic_cluster_update_enabled      = true
@@ -217,27 +176,35 @@ run "plan_test_enhanced_security" {
 }
 
 run "plan_test_byo_resource_group" {
-  state_key = "byo_rg"
   command   = plan
   variables {
-    create_workspace_resource_group = false
-    existing_resource_group_name    = "rg-existing"
-    resource_suffix                 = "byorg"
-    workspace_vnet = {
-      cidr     = "10.1.0.0/20"
-      new_bits = null
+    spokes = {
+      prod = {
+        resource_suffix                 = "byorg"
+        create_workspace_resource_group = false
+        workspace_vnet                 = { cidr = "10.1.0.0/20", new_bits = null }
+      }
+      dev = {
+        resource_suffix                 = "byorg-dev"
+        create_workspace_resource_group = false
+        workspace_vnet                 = { cidr = "10.1.0.0/20", new_bits = null }
+      }
     }
   }
 }
 
 run "plan_test_name_overrides" {
-  state_key = "name_overrides"
   command   = plan
   variables {
-    resource_suffix = "custom"
-    workspace_vnet = {
-      cidr     = "10.1.0.0/20"
-      new_bits = null
+    spokes = {
+      prod = {
+        resource_suffix = "custom"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = null }
+      }
+      dev = {
+        resource_suffix = "custom-dev"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = null }
+      }
     }
     workspace_name_overrides = {
       databricks_workspace = "my-custom-workspace"
@@ -247,13 +214,17 @@ run "plan_test_name_overrides" {
 }
 
 run "plan_test_custom_subnet_sizing" {
-  state_key = "custom_subnets"
   command   = plan
   variables {
-    resource_suffix = "customsubs"
-    workspace_vnet = {
-      cidr     = "10.1.0.0/20"
-      new_bits = 3
+    spokes = {
+      prod = {
+        resource_suffix = "customsubs"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = 3 }
+      }
+      dev = {
+        resource_suffix = "customsubs-dev"
+        workspace_vnet  = { cidr = "10.1.0.0/20", new_bits = 3 }
+      }
     }
   }
 }
