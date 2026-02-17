@@ -1,5 +1,0 @@
-resources:
-  database_instances:
-    instance:
-      name: sra-test
-      capacity: CU_1

@@ -1,4 +1,4 @@
-# Security Reference Architectures (SRA) - Terraform Templates
+# Azure Databricks Secure Reference Architecture (SRA) - Terraform
 
 <p align="center">
   <img src="https://i.postimg.cc/hP90xPqh/SRA-Screenshot.png" />
@@ -6,13 +6,9 @@
 
 ## Project Overview
 
-The [Security Reference Architecture (SRA)](https://databricks.github.io/terraform-databricks-sra/) with Terraform enables deployment of Databricks workspaces and cloud infrastructure configured with security best practices. Using the official Databricks Terraform provider, environments are programmatically set up with hardened configurations modeled after our most security-conscious customers. The included templates are built on [Databricks Security Best Practices](https://www.databricks.com/trust/security-features#best-practices), providing a strong, prescriptive foundation for secure deployments.
+The **Azure Databricks Secure Reference Architecture** with Terraform enables deployment of Databricks workspaces on Azure with security best practices. Using the official Databricks Terraform provider, environments are programmatically set up with hardened configurations modeled after security-conscious customers. The templates are built on [Databricks Security Best Practices](https://www.databricks.com/trust/security-features#best-practices), providing a strong, prescriptive foundation for secure deployments.
 
-
-
-- [AWS and AWS GovCloud](https://databricks.github.io/terraform-databricks-sra/docs/usage/AWS/)
-- [Azure](https://databricks.github.io/terraform-databricks-sra/docs/usage/Azure/)
-- [GCP](https://databricks.github.io/terraform-databricks-sra/docs/usage/GCP/)
+- **[Azure SRA](azure/)** — Hub-spoke network, Databricks workspace, Azure Firewall, Unity Catalog, Private Endpoints
 
 ## Project Support
 

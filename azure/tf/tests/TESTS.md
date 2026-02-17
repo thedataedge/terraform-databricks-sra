@@ -8,10 +8,9 @@ This document describes the Terraform tests for the Azure Databricks Secure Reso
 
 1. [Test Suite Overview](#test-suite-overview)
 2. [mock_plan.tftest.hcl — Unit Tests (Plan-Only)](#mock_plantftesthcl--unit-tests-plan-only)
-3. [integration.tftest.hcl — Integration Tests (Apply)](#integrationtftesthcl--integration-tests-apply)
-4. [Running the Tests](#running-the-tests)
-5. [CI/CD Configuration](#cicd-configuration)
-6. [Prerequisites](#prerequisites)
+3. [Running the Tests](#running-the-tests)
+4. [CI/CD Configuration](#cicd-configuration)
+5. [Prerequisites](#prerequisites)
 
 ---
 
@@ -20,9 +19,8 @@ This document describes the Terraform tests for the Azure Databricks Secure Reso
 | File | Type | Command | Infrastructure | CI |
 |------|------|---------|----------------|-----|
 | `mock_plan.tftest.hcl` | Unit | `plan` | None (mocked providers) | Yes |
-| `integration.tftest.hcl` | Integration | `apply` | Real Databricks workspace | No (manual) |
 
-The Azure CI workflow (`.github/workflows/azure-test.yml`) runs **only** `mock_plan.tftest.hcl` because it uses mocked providers and requires no cloud credentials or existing infrastructure. Integration tests run against a live workspace and are executed manually.
+The Azure CI workflow (`.github/workflows/azure-test.yml`) runs `mock_plan.tftest.hcl`, which uses mocked providers and requires no cloud credentials or existing infrastructure.
 
 ---
 
@@ -155,127 +153,12 @@ The `plan_test_byo_hub_byo_network` run was removed because `create_workspace_vn
 
 ---
 
-## integration.tftest.hcl — Integration Tests (Apply)
-
-These tests create and use real infrastructure. They require an already-applied Azure SRA environment with a Databricks workspace. Execution order is sequential due to dependencies between runs.
-
-### Global Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `sra_tag` | `"SRA Test Suite"` | Tag applied to test resources |
-| `open_test_job` | `false` | If true, opens job pages in browser during runs |
-
-### Run Blocks (Test Cases)
-
-#### 1. `test_initializer`
-
-- **Purpose:** Reads outputs from the local Terraform state in the cloud directory.
-- **Module:** `../../common/tests/test_initializer`
-- **Outputs:** `spoke_workspace_info`, `spoke_workspace_catalog` (used by downstream runs)
-- **Command:** `apply`
-
-#### 2. `classic_cluster_spoke`
-
-- **Purpose:** Provisions a small autoscaling classic cluster for test jobs.
-- **Module:** `../../common/tests/classic_cluster`
-- **Dependencies:** `test_initializer` (for `databricks_host`)
-- **Variables:** `databricks_host`, `tags`
-- **Outputs:** `cluster_id`, `node_type_id`, `spark_version` (passed to bundle runs)
-- **Validates:** Classic cluster creation
-
-#### 3. `bundle_deploy`
-
-- **Purpose:** Deploys the SRA bundle via `databricks bundle deploy --auto-approve`.
-- **Module:** `../../common/tests/sra_bundle_test`
-- **Dependencies:** `test_initializer`, `classic_cluster_spoke`
-- **Validates:** Creating jobs, notebooks, experiments, models, lakebase
-- **Outputs:** `working_dir` (used by `bundle_run` runs)
-
-#### 4. `spark_basic`
-
-- **Purpose:** Runs the basic Spark job from the bundle.
-- **Module:** `../../common/tests/bundle_run`
-- **Bundle job:** `spark_basic`
-- **Validates:**
-  - Running a Spark basic job
-  - Creating a Unity Catalog schema
-  - Creating a Unity Catalog table
-  - Writing to and reading from a UC table
-
-#### 5. `ml_workflow_classic`
-
-- **Purpose:** Runs the ML workflow on a classic cluster.
-- **Bundle job:** `ml_workflow_classic`
-- **Validates:**
-  - Creating UC tables
-  - Writing/reading UC tables
-  - Registering a model (blob endpoints for storage accounts)
-  - Access to sample data (NYC taxi)
-
-#### 6. `ml_cleanup_classic`
-
-- **Purpose:** Cleans up resources created by `ml_workflow_classic`.
-- **Bundle job:** `model_cleanup_classic`
-- **Dependencies:** `ml_workflow_classic`
-- **Validates:** Deleting a model from classic
-
-#### 7. `ml_workflow_serverless`
-
-- **Purpose:** Runs the ML workflow on serverless compute.
-- **Bundle job:** `ml_workflow_serverless`
-- **Validates:** Same as classic, but on serverless (UC tables, model registration, sample data)
-
-#### 8. `ml_cleanup_serverless`
-
-- **Purpose:** Cleans up resources created by `ml_workflow_serverless`.
-- **Bundle job:** `model_cleanup_serverless`
-- **Dependencies:** `ml_workflow_serverless`
-- **Validates:** Deleting a model from serverless
-
-#### 9. `lakebase_connectivity`
-
-- **Purpose:** Tests Lakebase connectivity from classic.
-- **Bundle job:** `lakebase`
-- **Validates:** Connecting to Lakebase from a classic cluster
-
-### Integration Test Flow
-
-```
-test_initializer → classic_cluster_spoke → bundle_deploy
-                                               ↓
-         spark_basic, ml_workflow_classic, ml_workflow_serverless, lakebase_connectivity
-                                               ↓
-         ml_cleanup_classic (after ml_workflow_classic)
-         ml_cleanup_serverless (after ml_workflow_serverless)
-```
-
----
-
 ## Running the Tests
-
-### Unit Tests (mock_plan — CI Default)
 
 ```bash
 cd azure/tf
 terraform init -backend=false
 terraform test -filter=tests/mock_plan.tftest.hcl
-```
-
-### Integration Tests (requires applied workspace)
-
-```bash
-cd azure/tf
-terraform init
-terraform apply   # Ensure workspace exists and state has outputs
-terraform test -filter=tests/integration.tftest.hcl
-```
-
-### All Tests
-
-```bash
-cd azure/tf
-terraform test
 ```
 
 ---
@@ -285,29 +168,14 @@ terraform test
 The `.github/workflows/azure-test.yml` workflow:
 
 - **Triggers:** Push/PR that touch `azure/tf/**` or the workflow file
-- **Test filter:** `-filter=tests/mock_plan.tftest.hcl` — only unit tests
+- **Test filter:** `-filter=tests/mock_plan.tftest.hcl`
 - **Backend:** `-backend=false` for plan-only tests
 - **Additional:** Runs `terraform fmt` check and TFLint
-
-Integration tests are **not** run in CI; they require a live Databricks workspace and credentials.
 
 ---
 
 ## Prerequisites
 
-### Unit Tests (mock_plan)
-
 - Terraform 1.6+
-- No cloud credentials
+- No cloud credentials required
 - No existing infrastructure
-
-### Integration Tests
-
-- Terraform 1.6+
-- Databricks CLI v0.218+ (for `databricks bundle` commands)
-- Applied Azure SRA environment with state containing:
-  - `spoke_workspace_info["prod"].workspace_url`
-  - `spoke_workspace_catalog["prod"]`
-- Authentication: `DATABRICKS_HOST`, `DATABRICKS_TOKEN` (or equivalent)
-
-See `common/tests/README.md` for full prerequisites and troubleshooting.

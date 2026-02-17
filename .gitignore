@@ -77,3 +77,7 @@ gcp/modules/service_account/*.json
 
 # Ignore backend script
 scripts/bootstrap_backend.sh
+
+# Documentation (client deployment - docs not in version control)
+/docs/
+/azure/docs/

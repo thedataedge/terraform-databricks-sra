@@ -1,4 +1,0 @@
-resources:
-  experiments:
-    experiment:
-      name: /Users/${workspace.current_user.userName}/${bundle.name}
