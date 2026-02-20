@@ -6,7 +6,7 @@ variable "databricks_account_id" {
 variable "databricks_metastore_id" {
   type        = string
   default     = null
-  description = "(Optional) Metastore ID to use for all workspaces created, required if create_hub is false"
+  description = "(Optional) Use existing metastore instead of creating one. Required if create_hub is false. When create_hub is true, if set, skips metastore creation (avoids region limit)."
 
   validation {
     condition     = var.create_hub ? true : var.databricks_metastore_id != null
@@ -208,6 +208,35 @@ variable "tags" {
 variable "subscription_id" {
   type        = string
   description = "(Required) Azure Subscription ID to deploy into"
+}
+
+variable "azure_tenant_id" {
+  type        = string
+  description = "(Required for account-level Databricks) Azure Entra tenant ID. Get with: az account show --query tenantId -o tsv."
+  default     = ""
+}
+
+# Service principal for Databricks account-level API (NCC, network policies, metastore).
+# SP must be registered in Databricks Account Console with Account Admin role.
+# The Azure App Registration must have API permission "AzureDatabricks" > user_impersonation (with admin consent).
+#
+# Alternative: Use ~/.databrickscfg by setting env var DATABRICKS_CONFIG_PROFILE=<profile-name> before terraform plan.
+variable "databricks_azure_client_id" {
+  type        = string
+  description = "(Required) Azure App Registration Application (client) ID. Find in Azure Portal > App registrations > your app."
+  default     = ""
+
+  validation {
+    condition     = !var.create_hub || length(var.databricks_azure_client_id) > 0
+    error_message = "databricks_azure_client_id is required when create_hub is true."
+  }
+}
+
+variable "databricks_azure_client_secret" {
+  type        = string
+  description = "(Required if not using profile) Client secret. Pass via TF_VAR_databricks_azure_client_secret or -var. Do not commit."
+  sensitive   = true
+  default     = ""
 }
 
 variable "sat_configuration" {

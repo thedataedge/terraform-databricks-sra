@@ -1,7 +1,7 @@
 locals {
   # If the user provides a storage account name, use it. If they do not, check if the resource_suffix was left defaulted. If it was, generate a unique storage account name, else use a non-unique storage account name (assuming the resource suffix is unique).
   # Storage account names may only contain lowercase letters and numbers (3–24 chars). Strip hyphens and cap length.
-  storage_account_name   = substr(replace(coalesce(var.storage_account_name, "${module.naming.storage_account.name}uc"), "-", ""), 0, 24)
+  storage_account_name   = substr(replace(coalesce(var.storage_account_name, module.naming.storage_account.name), "-", ""), 0, 24)
   uc_abfss_url           = "abfss://${azurerm_storage_container.unity_catalog.name}@${azurerm_storage_account.unity_catalog.primary_dfs_host}/"
   access_connector_mi_id = azurerm_databricks_access_connector.unity_catalog.identity[0].principal_id
 }

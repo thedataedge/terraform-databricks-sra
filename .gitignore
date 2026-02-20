@@ -76,8 +76,11 @@ gcp/modules/service_account/*.json
 .cursor/
 
 # Ignore backend script
-scripts/bootstrap_backend.sh
+# scripts/bootstrap_backend.sh
+
+# Env script with secrets (Service Principal credentials)
+**/set-env.sh
 
 # Documentation (client deployment - docs not in version control)
-/docs/
-/azure/docs/
+# /docs/
+# /azure/docs/

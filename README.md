@@ -1,4 +1,6 @@
-# Azure Databricks Secure Reference Architecture (SRA) — Terraform
+# TePe Infrastructure 
+
+Terraform-managed Azure infrastructure for TePe, based on the **Databricks Secure Reference Architecture** (SRA). Deploys hub-spoke networking, Databricks workspaces with Unity Catalog, and Azure Data Factory in prod and dev environments.
 
 <p align="center">
   <img src="https://i.postimg.cc/hP90xPqh/SRA-Screenshot.png" alt="SRA Architecture" width="600" />
@@ -11,17 +13,12 @@
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
 - [Key Features](#key-features)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Component Breakdown](#component-breakdown)
 - [Security Analysis Tool (SAT)](#security-analysis-tool-sat)
 - [Terraform State Backend](#terraform-state-backend)
 - [Testing](#testing)
-- [Additional Security Recommendations](#additional-security-recommendations)
-- [Troubleshooting](#troubleshooting)
-- [Support & License](#support--license)
+- [Additional Resources](#additional-resources)
 
 ---
 
@@ -67,11 +64,9 @@ The architecture follows a hub-spoke model:
 └──────────────────┘                                   └────────────────────┘
 ```
 
-![Architecture Diagram](https://cms.databricks.com/sites/default/files/inline-images/db-9734-blog-img-4.png)
-
 ### Network Flow
 
-- **Hub:** Contains Azure Firewall (optional), route table, and IP group for workspace outbound control. Container and host subnets are **not** in the hub—they live only in spokes.
+- **Hub:** Contains Azure Firewall (optional), route table, and IP group for workspace outbound control. 
 - **Spokes:** Each spoke has its own resource group, VNet, Databricks workspace, Unity Catalog catalog, and Azure Data Factory instance. Workspace compute subnets (container, host) and privatelink subnet reside in the spoke VNet.
 - **Outbound:** When firewall is enabled, workspace traffic routes through the hub firewall via VirtualAppliance. When disabled, traffic uses default Azure routing.
 
@@ -119,7 +114,7 @@ The `spokes` variable defines prod and dev environments. Each spoke receives:
 ## Project Structure
 
 ```
-terraform-databricks-sra/
+tepe-infra/
 ├── README.md                    # This file
 ├── LICENSE
 ├── azure/
@@ -136,11 +131,11 @@ terraform-databricks-sra/
 │       ├── versions.tf
 │       ├── datasources.tf
 │       ├── customizations.tf    # SAT (optional, largely commented)
-│       ├── backend.azurerm.example.hcl
+│       ├── scripts/
+│       │   └── bootstrap_backend.sh
 │       ├── tests/
 │       │   ├── mock_plan.tftest.hcl
 │       │   ├── integration.tftest.hcl
-│       │   ├── terraform.tfvars
 │       │   └── TESTS.md
 │       └── modules/
 │           ├── hub/             # Hub VNet, firewall, NCC, metastore
@@ -189,59 +184,12 @@ terraform-databricks-sra/
 
 ---
 
-## Security Analysis Tool (SAT)
-
-[Security Analysis Tool](https://databricks-industry-solutions.github.io/security-analysis-tool/) (SAT) is **disabled by default**. When enabled via `sat_configuration`, it can be customized as follows.
-
-### Changing the SAT Workspace
-
-To install SAT in a different workspace, modify `customizations.tf`:
-
-1. **Provider** – Change the Databricks provider in the SAT module (e.g. `databricks.spoke` instead of `databricks.hub`).
-2. **`sat_workspace` local** – Update to reference the correct module (e.g. `module.spoke_workspace["prod"]` instead of `module.hub`).
-3. **`databricks_permission_assignment.sat_workspace_admin`** – Set the provider to the target workspace.
-
-SAT is designed to run once per Azure subscription; for multiple regions, provision SAT in multiple spokes.
-
-### SAT Service Principal (BYO)
-
-To use a pre-existing Entra ID service principal:
-
-```hcl
-sat_service_principal = {
-  client_id     = "00000000-0000-0000-0000-000000000000"
-  client_secret = "some-secret"
-}
-```
-
-To customize the name of the auto-created SP:
-
-```hcl
-sat_service_principal = {
-  name = "spSATDev"
-}
-```
-
-### SAT Compute
-
-SAT runs on classic compute by default (required to inspect workspaces outside the current one). For serverless:
-
-```hcl
-sat_configuration = {
-  run_on_serverless = true
-}
-```
-
-> **Note:** On serverless, SAT inspects only the current workspace.
-
----
-
 ## Terraform State Backend
 
 State is stored in Azure Blob Storage. Default configuration uses:
 
 - **Resource group:** `rg-tepe-terraform-mgmt`
-- **Storage account:** `stterraformstatetepe` (northeurope)
+- **Storage account:** `sttepetfstateprod`
 - **Container:** `tfstate`
 - **Key:** `azure.terraform.tfstate`
 
@@ -256,11 +204,13 @@ State is stored in Azure Blob Storage. Default configuration uses:
 
    If both RG and storage account are new, run without `SKIP_STORAGE_ACCOUNT`. Optional env vars: `RESOURCE_GROUP`, `STORAGE_ACCOUNT_NAME`, `CONTAINER_NAME`, `LOCATION`, `SUBSCRIPTION_ID`.
 
-2. **Configure backend:**
+2. **Configure backend:** Create `backend.azurerm.hcl` in `azure/tf/` with:
 
-   ```bash
-   cp backend.azurerm.example.hcl backend.azurerm.hcl
-   # Edit if using different storage account
+   ```hcl
+   resource_group_name  = "rg-tepe-terraform-mgmt"
+   storage_account_name = "sttepetfstateprod"
+   container_name       = "tfstate"
+   key                 = "azure.terraform.tfstate"
    ```
 
 3. **Initialize with backend:**
@@ -270,6 +220,18 @@ State is stored in Azure Blob Storage. Default configuration uses:
    ```
 
 > `backend.azurerm.hcl` is gitignored. Keep it out of version control.
+
+### Databricks Service Principal (Account-Level)
+
+Account-level operations (NCC, network policies, metastore) require a service principal with Account Admin role. The SP must be:
+
+1. Registered in [Databricks Account Console](https://accounts.azuredatabricks.net/) → User management → Service principals (with Account Admin)
+2. Its Azure App Registration must have API permission **AzureDatabricks** → **user_impersonation** (Delegated), with **Admin consent** granted. Without this, you may get "accountId could not be retrieved".
+
+Set credentials as follows:
+
+- Set `databricks_azure_client_id` in `terraform.tfvars`
+- Provide the secret: `export TF_VAR_databricks_azure_client_secret="<your-secret>"`
 
 ### State Lock
 
@@ -294,17 +256,6 @@ cd azure/tf
 terraform init -backend=false
 terraform test -filter=tests/mock_plan.tftest.hcl
 ```
-
-### CI Workflow
-
-The `terraform-ruw` workflow (called by `azure-test.yml`) runs on push/PR to `azure/tf/**`:
-
-- **TFLint** – Linter for Terraform (resource misconfigurations, deprecated syntax, style). Configure via `.tflint.hcl` in `azure/tf`.
-- **terraform fmt** – Format check (`terraform_fmt_check: true` in CI).
-- **terraform test** – Runs `mock_plan.tftest.hcl` with `-backend=false`.
-
-See [azure/tf/tests/TESTS.md](azure/tf/tests/TESTS.md) for test documentation.
-
 ---
 
 ## Additional Resources

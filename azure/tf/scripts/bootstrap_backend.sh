@@ -4,12 +4,12 @@
 #
 # Usage:
 #   ./scripts/bootstrap_backend.sh
-# If the storage account already exists (e.g. stterraformstatetepe), only create the container:
+# If the storage account already exists (e.g. sttepetfstateprod), only create the container:
 #   SKIP_STORAGE_ACCOUNT=true ./scripts/bootstrap_backend.sh
 #
 # Optional env vars:
 #   SUBSCRIPTION_ID        Azure subscription (default: current subscription)
-#   STORAGE_ACCOUNT_NAME   Name for the storage account (default: stterraformstatetepe)
+#   STORAGE_ACCOUNT_NAME   Name for the storage account (default: sttepetfstateprod)
 #   RESOURCE_GROUP         Resource group name (default: rg-tepe-terraform-mgmt)
 #   LOCATION               Azure region (default: northeurope)
 #   CONTAINER_NAME         Container name (default: tfstate)
@@ -18,7 +18,7 @@
 set -e
 
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-tepe-terraform-mgmt}"
-STORAGE_ACCOUNT_NAME="${STORAGE_ACCOUNT_NAME:-stterraformstatetepe}"
+STORAGE_ACCOUNT_NAME="${STORAGE_ACCOUNT_NAME:-sttepetfstateprod}"
 CONTAINER_NAME="${CONTAINER_NAME:-tfstate}"
 LOCATION="${LOCATION:-northeurope}"
 SKIP_STORAGE_ACCOUNT="${SKIP_STORAGE_ACCOUNT:-false}"

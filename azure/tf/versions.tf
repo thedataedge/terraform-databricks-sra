@@ -2,7 +2,8 @@ terraform {
   backend "azurerm" {
     # Backend config is not allowed to use variables. Provide config via:
     #   terraform init -backend-config=backend.azurerm.hcl
-    # See backend.azurerm.example.hcl and scripts/bootstrap_backend.sh
+    # See README Terraform State Backend section and scripts/bootstrap_backend.sh
+    use_azuread_auth = true
   }
 
   required_providers {

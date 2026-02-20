@@ -59,6 +59,12 @@ variable "is_unity_catalog_enabled" {
   default     = true
 }
 
+variable "existing_metastore_id" {
+  type        = string
+  description = "(Optional) ID of existing metastore to use instead of creating one. When set, metastore creation is skipped."
+  default     = null
+}
+
 variable "databricks_app_reg" {
   type        = any
   description = "(Required) Result of data block data.azuread_application_published_app_ids.well_known.result['AzureDataBricks']"
